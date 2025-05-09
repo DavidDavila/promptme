@@ -1,21 +1,15 @@
-Claro, aquí tienes un `README.md` completo y profesional para tu paquete `promptme`. Incluye instrucciones de instalación, uso, opciones disponibles y ejemplos prácticos:
-
----
-
-````markdown
 # 🧠 promptme
 
 **`promptme`** es una herramienta CLI para generar archivos de texto con el contenido estructurado de tu proyecto, pensado especialmente para usarse como contexto en modelos de IA como ChatGPT o GPT-4.
 
 Te permite exportar automáticamente tu código fuente ignorando archivos innecesarios, dividirlo en archivos por tamaño, generar un resumen del proyecto, y más.
 
----
-
 ## 🚀 Instalación
 
 ```bash
 npm install -g promptme
 ```
+
 ````
 
 > Esto instalará el comando `promptme` de forma global.
@@ -139,3 +133,4 @@ Si usas `--summary`, se generará un archivo con:
 ## 📄 Licencia
 
 MIT © 2025 - David Davila
+````
