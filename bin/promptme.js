@@ -2,27 +2,21 @@
 
 const { program } = require('commander');
 const { generatePromptFiles } = require('../lib/generate');
-const { generateSummary } = require('../lib/summary');
 
 program
-  .option('-m, --maxlength <bytes>', 'Tamaño máximo de cada archivo en bytes (por defecto: 80000)', '80000')
-  .option('-o, --output <base>', 'Nombre base de los archivos de salida', 'project_prompt')
-  .option('-f, --format <type>', 'Formato de salida: txt, md, json', 'txt')
-  .option('-i, --include <folders>', 'Carpetas a incluir, separadas por coma', val => val.split(','), [])
-  .option('--template <file>', 'Archivo de plantilla para el prompt inicial')
-  .option('--summary', 'Genera archivo project_summary.txt con resumen del proyecto')
+  .option('-m, --maxlength <bytes>', 'Tamaño máximo por archivo', '40000')
+  .option('-o, --output <base>', 'Nombre base de archivo', 'project_prompt')
+  .option('-f, --format <format>', 'Formato: txt, md, json', 'txt')
+  .option('-i, --include <folders>', 'Carpetas a incluir', val => val.split(','), [])
+  .option('--template <file>', 'Usar plantilla personalizada')
+  .option('--summary', 'Generar resumen del proyecto') // opcional si lo implementaste
   .parse(process.argv);
 
-const options = program.opts();
-
+const opts = program.opts();
 generatePromptFiles({
-  maxLength: parseInt(options.maxlength),
-  outputBase: options.output,
-  format: options.format,
-  includeFolders: options.include,
-  templatePath: options.template
+  maxLength: parseInt(opts.maxlength),
+  outputBase: opts.output,
+  format: opts.format,
+  includeFolders: opts.include,
+  templatePath: opts.template
 });
-
-if (options.summary) {
-  generateSummary();
-}
