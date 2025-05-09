@@ -10,7 +10,6 @@ Te permite exportar automáticamente tu código fuente ignorando archivos innece
 
 ```bash
 npm install -g promptme
-
 ```
 
 > Esto instalará el comando `promptme` de forma global.
@@ -37,12 +36,24 @@ promptme [options]
 
 | Opción              | Descripción                                                               |
 | ------------------- | ------------------------------------------------------------------------- |
-| `-m`, `--maxlength` | Tamaño máximo (en bytes) por archivo generado (por defecto: `12000`)      |
+| `-m`, `--maxlength` | Tamaño máximo (en bytes) por archivo generado (por defecto: `40000`)      |
 | `-o`, `--output`    | Nombre base de los archivos de salida (por defecto: `project_prompt`)     |
 | `-f`, `--format`    | Formato de salida: `txt`, `md`, o `json`                                  |
 | `-i`, `--include`   | Carpetas a incluir, separadas por coma (ej: `src,test`)                   |
 | `--template <file>` | Ruta a un archivo `.promptmetemplate` personalizado                       |
 | `--summary`         | Genera también un archivo `project_summary.txt` con detalles del proyecto |
+
+---
+
+## 🔄 Comando reset
+
+Si has modificado la plantilla o el archivo `.promptmeignore` y deseas restablecerlos a sus valores por defecto, puedes hacerlo con:
+
+```bash
+promptme reset
+```
+
+Esto sobrescribirá los archivos `.promptmetemplate` y `.promptmeignore` con las versiones estándar proporcionadas por la herramienta.
 
 ---
 
@@ -79,6 +90,7 @@ promptme --summary
 1. Un encabezado introductorio (puedes personalizarlo con una plantilla).
 2. El contenido completo de los archivos fuente.
 3. División automática en archivos si el tamaño supera el límite definido (`--maxlength`).
+4. Un mensaje final indicando a la IA que el volcado ha terminado.
 
 ---
 
@@ -86,25 +98,11 @@ promptme --summary
 
 ### `.promptmeignore`
 
-Funciona igual que un `.gitignore`. Aquí defines qué archivos no se deben incluir. Ejemplo:
-
-```
-node_modules
-dist
-.git
-package-lock.json
-.env
-```
+Funciona igual que un `.gitignore`. Aquí defines qué archivos no se deben incluir. Se genera automáticamente si no existe.
 
 ### `.promptmetemplate`
 
-Plantilla opcional para el texto inicial del prompt. Ejemplo:
-
-```txt
-# Análisis del proyecto
-
-Estás viendo el contenido del proyecto `{projectName}`. Usa este contexto para responder futuras preguntas técnicas.
-```
+Plantilla opcional para el texto inicial del prompt. Se genera automáticamente si no existe. Puedes modificarla o restablecerla con `promptme reset`.
 
 ---
 
@@ -135,3 +133,7 @@ Si usas `--summary`, se generará un archivo con:
 ## 📄 Licencia
 
 MIT © 2025 - David Dávila
+
+```
+
+```
