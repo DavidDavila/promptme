@@ -1,4 +1,3 @@
-````markdown
 # 🧠 promptme
 
 **`promptme`** es una herramienta CLI para generar archivos de texto con el contenido estructurado de tu proyecto, pensada especialmente para usarse como contexto en modelos de IA como ChatGPT o GPT-4.
@@ -11,8 +10,8 @@ Te permite exportar automáticamente tu código fuente ignorando archivos innece
 
 ```bash
 npm install -g promptme
+
 ```
-````
 
 > Esto instalará el comando `promptme` de forma global.
 
