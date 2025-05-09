@@ -1,15 +1,17 @@
+````markdown
 # 🧠 promptme
 
-**`promptme`** es una herramienta CLI para generar archivos de texto con el contenido estructurado de tu proyecto, pensado especialmente para usarse como contexto en modelos de IA como ChatGPT o GPT-4.
+**`promptme`** es una herramienta CLI para generar archivos de texto con el contenido estructurado de tu proyecto, pensada especialmente para usarse como contexto en modelos de IA como ChatGPT o GPT-4.
 
 Te permite exportar automáticamente tu código fuente ignorando archivos innecesarios, dividirlo en archivos por tamaño, generar un resumen del proyecto, y más.
+
+---
 
 ## 🚀 Instalación
 
 ```bash
 npm install -g promptme
 ```
-
 ````
 
 > Esto instalará el comando `promptme` de forma global.
@@ -39,7 +41,7 @@ promptme [options]
 | `-m`, `--maxlength` | Tamaño máximo (en bytes) por archivo generado (por defecto: `12000`)      |
 | `-o`, `--output`    | Nombre base de los archivos de salida (por defecto: `project_prompt`)     |
 | `-f`, `--format`    | Formato de salida: `txt`, `md`, o `json`                                  |
-| `-i`, `--include`   | Carpetas a incluir, separadas por coma (`src,test`)                       |
+| `-i`, `--include`   | Carpetas a incluir, separadas por coma (ej: `src,test`)                   |
 | `--template <file>` | Ruta a un archivo `.promptmetemplate` personalizado                       |
 | `--summary`         | Genera también un archivo `project_summary.txt` con detalles del proyecto |
 
@@ -75,9 +77,9 @@ promptme --summary
 
 ## 🧠 Qué contiene el prompt generado
 
-1. Un encabezado introductorio (puedes personalizarlo).
+1. Un encabezado introductorio (puedes personalizarlo con una plantilla).
 2. El contenido completo de los archivos fuente.
-3. El proyecto se divide en varios archivos si es muy grande para ChatGPT (limite ajustable con `--maxlength`).
+3. División automática en archivos si el tamaño supera el límite definido (`--maxlength`).
 
 ---
 
@@ -111,7 +113,7 @@ Estás viendo el contenido del proyecto `{projectName}`. Usa este contexto para 
 
 Si usas `--summary`, se generará un archivo con:
 
-- Lenguajes detectados (por extensión)
+- Lenguajes detectados (por extensión de archivo)
 - Dependencias (`dependencies` y `devDependencies` de `package.json`)
 
 ---
@@ -121,16 +123,16 @@ Si usas `--summary`, se generará un archivo con:
 - Pasar el contexto de tu código a ChatGPT para refactoring o auditoría
 - Compartir snapshots de tu proyecto
 - Documentación automática y análisis semántico
+- Análisis de estructura para nuevos colaboradores
 
 ---
 
 ## 🛠️ Contribuciones
 
-¿Ideas, sugerencias o mejoras? ¡Las contribuciones están abiertas!
+¿Ideas, sugerencias o mejoras? ¡Las contribuciones están abiertas! Abre un issue o pull request en el repositorio.
 
 ---
 
 ## 📄 Licencia
 
-MIT © 2025 - David Davila
-````
+MIT © 2025 - David Dávila
