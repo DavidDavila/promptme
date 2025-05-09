@@ -1,0 +1,903 @@
+# 🧠 Análisis del proyecto `promptme`
+
+A continuación encontrarás un volcado completo del contenido de mi proyecto `promptme`. He incluido todos los archivos relevantes del repositorio (código fuente, configuración, y otros ficheros útiles) ignorando archivos de dependencias, binarios, y ficheros temporales.
+
+## 🎯 Objetivo
+
+El objetivo es que analices este proyecto como si fueras un experto en desarrollo de software. Podrás:
+- Comprender su estructura y arquitectura.
+- Detectar posibles errores, malas prácticas o mejoras.
+- Responder a preguntas técnicas que te haré más adelante.
+
+## 📦 Sobre el contenido
+
+- Cada archivo está precedido por una línea que indica su ruta.
+- El contenido se mantiene fiel al original, sin modificaciones.
+- El código está dividido en múltiples archivos si es necesario, debido a límites de tokens.
+
+---
+
+Por favor **espera a que te envíe todos los archivos**, y luego estaré listo para hacerte preguntas más detalladas sobre el código, arquitectura, o posibles mejoras.
+
+
+//bin\promptme.js
+#!/usr/bin/env node
+
+const { program } = require('commander');
+const { generatePromptFiles } = require('../lib/generate');
+const { resetAll } = require('../lib/reset');
+
+program
+  .name('promptme')
+  .description('CLI para generar contexto de código para IA')
+  .option('-m, --maxlength <bytes>', 'Tamaño máximo por archivo', '40000')
+  .option('-o, --output <base>', 'Nombre base de archivo', 'project_prompt')
+  .option('-f, --format <format>', 'Formato: txt, md, json', 'txt')
+  .option('-i, --include <folders>', 'Carpetas a incluir (ej: src,test)', val => val.split(','), [])
+  .option('--template <file>', 'Usar plantilla personalizada')
+  .option('--summary', 'Generar resumen del proyecto')
+  .action((opts) => {
+    generatePromptFiles({
+      maxLength: parseInt(opts.maxlength),
+      outputBase: opts.output,
+      format: opts.format,
+      includeFolders: opts.include,
+      templatePath: opts.template
+    });
+  });
+
+program
+  .command('reset')
+  .description('Restablece la plantilla y el archivo de ignore por defecto')
+  .action(resetAll);
+
+program.parse();
+
+
+//lib\generate.js
+const fs = require('fs');
+const path = require('path');
+const ignore = require('ignore');
+const glob = require('glob');
+const { isText } = require('istextorbinary');
+const { loadPromptTemplate } = require('./template');
+
+const projectRoot = process.cwd();
+
+function ensurePromptmeIgnoreExists() {
+  const ignorePath = path.join(projectRoot, '.promptmeignore');
+  if (!fs.existsSync(ignorePath)) {
+    const defaultIgnore = `
+# 📦 Dependencias y binarios
+node_modules/
+bower_components/
+vendor/
+.pnp/
+.pnp.js
+.pnp.cjs
+
+# 🔧 Bun
+bun.lockb
+.bunlock
+.bunlockb
+.bunfig
+.bunfig.toml
+bunfig.toml
+
+# 🛠️ Build / dist / cache
+dist/
+build/
+out/
+public/
+.esbuild/
+.vite/
+.rollup.cache/
+.storybook/static/
+.nitro/
+.next/
+.netlify/
+.vercel/
+astro/
+remix/
+
+# 🔄 Caché de herramientas
+.tmp/
+.cache/
+.rpt2_cache/
+.nyc_output/
+coverage/
+.jest/
+jest/
+.vitest/
+.cypress/
+playwright-report/
+test-results/
+tsbuildinfo/
+tsconfig.tsbuildinfo
+
+# 🧪 Archivos de pruebas
+*.snap
+*.spec.*
+*.test.*
+coverage-final.json
+
+# 🔐 Configuración sensible o local
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+.npmrc
+.yarnrc
+.babelrc
+.browserslistrc
+*.local
+*.secret
+*.credentials
+
+# 📄 Lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+.bunlock
+.bunlockb
+
+# 📝 Archivos generados por promptme
+project_prompt*.txt
+project_summary.txt
+.promptmeignore
+.promptmetemplate
+
+# 📁 Control de versiones
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# 🧰 Configuración de IDEs y herramientas
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Tokens / configuración de acceso
+.npmrc
+.yarnrc
+.pypirc
+.git-credentials
+.gitconfig
+.gnupg/
+.ssh/
+.docker/
+.aws/
+.azure/
+.gcloud/
+.nodemon.json
+.babelrc
+.babel.config.js
+
+# Archivos de entorno
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Claves
+*.pem
+*.key
+*.crt
+*.cert
+*.enc
+*.asc
+
+# Credenciales o tokens por nombre común
+*credentials*
+*token*
+*secret*
+*.secrets.*
+*.vault.*
+*.auth.*
+*.apikey.*
+
+# Archivos ocultos de usuarios
+*.DS_Store
+*.AppleDouble
+*.LSOverride
+*.swp
+*.swo
+
+# 🗑️ Archivos temporales y de respaldo
+*.lockb
+*.so
+*.bin
+*.exe
+*.dll
+*.zip
+*.tar
+*.gz
+*.png
+*.jpg
+*.pdf
+*.log
+*.tmp
+*.bak
+*.swp
+*.old
+*.orig
+*.rej
+*.~
+*.save
+
+# 📦 Monorepo tools
+apps/**/node_modules/
+packages/**/node_modules/
+apps/**/dist/
+packages/**/dist/
+turbo/
+nx-out/
+`.trim();
+
+    fs.writeFileSync(ignorePath, defaultIgnore + '\n', 'utf8');
+    console.log('📄 Archivo .promptmeignore creado por defecto');
+  }
+}
+
+function ensurePromptmeTemplateExists() {
+  const templatePath = path.join(projectRoot, '.promptmetemplate');
+  if (!fs.existsSync(templatePath)) {
+    const defaultTemplate = `
+# 🧠 Análisis del proyecto \`{projectName}\`
+
+A continuación encontrarás un volcado completo del contenido de mi proyecto \`{projectName}\`. He incluido todos los archivos relevantes del repositorio (código fuente, configuración, y otros ficheros útiles) ignorando archivos de dependencias, binarios, y ficheros temporales.
+
+## 🎯 Objetivo
+
+El objetivo es que analices este proyecto como si fueras un experto en desarrollo de software. Podrás:
+- Comprender su estructura y arquitectura.
+- Detectar posibles errores, malas prácticas o mejoras.
+- Responder a preguntas técnicas que te haré más adelante.
+
+## 📦 Sobre el contenido
+
+- Cada archivo está precedido por una línea que indica su ruta.
+- El contenido se mantiene fiel al original, sin modificaciones.
+- El código está dividido en múltiples archivos si es necesario, debido a límites de tokens.
+
+---
+
+Por favor **espera a que te envíe todos los archivos**, y luego estaré listo para hacerte preguntas más detalladas sobre el código, arquitectura, o posibles mejoras.
+`.trim();
+
+    fs.writeFileSync(templatePath, defaultTemplate + '\n', 'utf8');
+    console.log('📄 Archivo .promptmetemplate creado por defecto');
+  }
+}
+
+function readIgnoreRules() {
+  const ignorePath = path.join(projectRoot, '.promptmeignore');
+  const ig = ignore();
+  if (fs.existsSync(ignorePath)) {
+    ig.add(fs.readFileSync(ignorePath, 'utf8'));
+  }
+  return ig;
+}
+
+function* walk(dir, ig, includeFolders) {
+  const entries = fs.readdirSync(dir);
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry);
+    const relPath = path.relative(projectRoot, fullPath);
+    if (ig.ignores(relPath)) continue;
+
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      if (includeFolders.length > 0 && !includeFolders.some(f => relPath.startsWith(f))) {
+        continue;
+      }
+      yield* walk(fullPath, ig, includeFolders);
+    } else if (stat.isFile()) {
+      let buffer;
+      try {
+        buffer = fs.readFileSync(fullPath);
+      } catch (err) {
+        console.warn(`❌ Error leyendo archivo ${relPath}: ${err.message}`);
+        continue;
+      }
+
+      const isTextFile = isText(undefined, buffer);
+      if (!isTextFile) {
+        console.log(`⏭️  Ignorado (no texto): ${relPath}`);
+        continue;
+      }
+
+      if (includeFolders.length === 0 || includeFolders.some(f => relPath.startsWith(f))) {
+        yield { relPath, buffer };
+      }
+    }
+  }
+}
+
+function cleanOldPromptFiles(outputBase) {
+  const oldFiles = glob.sync(`${outputBase}*.{txt,md,json}`, { cwd: projectRoot });
+  oldFiles.forEach(file => fs.unlinkSync(path.join(projectRoot, file)));
+}
+
+function formatEntry(filePath, content, format) {
+  switch (format) {
+    case 'md':
+      return `## ${filePath}\n\n\`\`\`\n${content}\n\`\`\`\n\n`;
+    case 'json':
+      return { [filePath]: content };
+    case 'txt':
+    default:
+      return `//${filePath}\n${content}\n\n`;
+  }
+}
+
+function generatePromptFiles({ maxLength, outputBase, format, includeFolders, templatePath }) {
+  ensurePromptmeIgnoreExists();
+  ensurePromptmeTemplateExists();
+  const ig = readIgnoreRules();
+  cleanOldPromptFiles(outputBase);
+
+  const template = loadPromptTemplate(templatePath);
+  let buffer = format === 'json' ? {} : template;
+  let fileIndex = 1;
+
+  for (const { relPath, buffer: fileBuffer } of walk(projectRoot, ig, includeFolders)) {
+    const content = fileBuffer.toString('utf8');
+    if (!content.trim()) {
+      console.log(`⏭️  Ignorado (vacío): ${relPath}`);
+      continue;
+    }
+
+    const entry = formatEntry(relPath, content, format);
+    const entrySize = Buffer.byteLength(entry, 'utf8');
+
+    if (entrySize > maxLength) {
+      console.warn(`⚠️ Archivo demasiado grande para incluir (${relPath}, ${entrySize} bytes). Saltado.`);
+      continue;
+    }
+
+    const estimatedSize = format === 'json'
+      ? Buffer.byteLength(JSON.stringify({ ...buffer, ...entry }), 'utf8')
+      : Buffer.byteLength(buffer + entry, 'utf8');
+
+    const hasContent =
+      format === 'json' ? Object.keys(buffer).length > 0 : buffer.trim().length > 0;
+
+    if (estimatedSize > maxLength && hasContent) {
+      const outputPath = path.join(projectRoot, `${outputBase}${fileIndex}.${format}`);
+      const outputContent = format === 'json' ? JSON.stringify(buffer, null, 2) : buffer;
+      fs.writeFileSync(outputPath, outputContent, 'utf8');
+      fileIndex++;
+      buffer = format === 'json' ? {} : '';
+    }
+
+    if (format === 'json') {
+      buffer = { ...buffer, ...entry };
+    } else {
+      buffer += entry;
+    }
+  }
+
+  const hasRemainingContent =
+    format === 'json' ? Object.keys(buffer).length > 0 : buffer.trim().length > 0;
+
+  if (hasRemainingContent) {
+    if (format === 'json') {
+      buffer["__end__"] = "✅ Fin del volcado de archivos. Ya puedes comenzar a responder preguntas sobre el proyecto.";
+    } else {
+      buffer += '\n---\n\n✅ Fin del volcado de archivos. Ya puedes comenzar a responder preguntas sobre el proyecto.\n';
+    }
+
+    const outputPath = path.join(projectRoot, `${outputBase}${fileIndex}.${format}`);
+    const outputContent = format === 'json' ? JSON.stringify(buffer, null, 2) : buffer;
+    fs.writeFileSync(outputPath, outputContent, 'utf8');
+  }
+
+  console.log(`✅ Archivos generados en formato ${format}`);
+}
+
+module.exports = { generatePromptFiles };
+
+
+//lib\reset.js
+const fs = require('fs');
+const path = require('path');
+
+const projectRoot = process.cwd();
+
+function resetPromptmeIgnore() {
+  const ignorePath = path.join(projectRoot, '.promptmeignore');
+  const defaultPath = path.join(__dirname, '../templates/default.promptmeignore');
+
+  if (!fs.existsSync(defaultPath)) {
+    console.error('❌ No se encontró templates/default.promptmeignore');
+    return;
+  }
+
+  const defaultContent = fs.readFileSync(defaultPath, 'utf8');
+  fs.writeFileSync(ignorePath, defaultContent, 'utf8');
+  console.log('✅ .promptmeignore restablecido');
+}
+
+function resetPromptmeTemplate() {
+  const templatePath = path.join(projectRoot, '.promptmetemplate');
+  const defaultPath = path.join(__dirname, '../templates/default.promptmetemplate');
+
+  if (!fs.existsSync(defaultPath)) {
+    console.error('❌ No se encontró templates/default.promptmetemplate');
+    return;
+  }
+
+  const defaultContent = fs.readFileSync(defaultPath, 'utf8');
+  fs.writeFileSync(templatePath, defaultContent, 'utf8');
+  console.log('✅ .promptmetemplate restablecido');
+}
+
+function resetAll() {
+  console.log('🔁 Restableciendo archivos de configuración...');
+  resetPromptmeIgnore();
+  resetPromptmeTemplate();
+  console.log('🎉 ¡Listo! Archivos de configuración restablecidos.');
+}
+
+module.exports = { resetAll };
+
+
+//lib\summary.js
+const fs = require('fs');
+const path = require('path');
+
+function detectLanguages(dir) {
+  const extensions = new Set();
+  function walk(d) {
+    const files = fs.readdirSync(d);
+    for (const file of files) {
+      const full = path.join(d, file);
+      const stat = fs.statSync(full);
+      if (stat.isDirectory()) {
+        walk(full);
+      } else {
+        const ext = path.extname(full);
+        if (ext) extensions.add(ext);
+      }
+    }
+  }
+  walk(dir);
+  return Array.from(extensions).sort();
+}
+
+function extractDependencies() {
+  const pkgPath = path.join(process.cwd(), 'package.json');
+  if (!fs.existsSync(pkgPath)) return null;
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  return {
+    dependencies: pkg.dependencies || {},
+    devDependencies: pkg.devDependencies || {}
+  };
+}
+
+function generateSummary() {
+  const langs = detectLanguages(process.cwd());
+  const deps = extractDependencies();
+
+  let summary = `# Resumen del proyecto\n\n## Lenguajes detectados\n- ${langs.join('\n- ')}\n`;
+
+  if (deps) {
+    summary += `\n## Dependencias\n`;
+    for (const [dep, version] of Object.entries(deps.dependencies)) {
+      summary += `- ${dep}@${version}\n`;
+    }
+    if (Object.keys(deps.devDependencies).length) {
+      summary += `\n## DevDependencias\n`;
+      for (const [dep, version] of Object.entries(deps.devDependencies)) {
+        summary += `- ${dep}@${version}\n`;
+      }
+    }
+  }
+
+  fs.writeFileSync(path.join(process.cwd(), 'project_summary.txt'), summary, 'utf8');
+  console.log('📄 Resumen generado: project_summary.txt');
+}
+
+module.exports = { generateSummary };
+
+
+//lib\template.js
+const fs = require('fs');
+const path = require('path');
+
+function loadPromptTemplate(templatePath = null) {
+  const userTemplatePath = path.join(process.cwd(), '.promptmetemplate');
+  const fallbackTemplatePath = path.join(__dirname, '../templates/default.promptmetemplate');
+
+  const finalPath =
+    templatePath && fs.existsSync(templatePath)
+      ? templatePath
+      : fs.existsSync(userTemplatePath)
+        ? userTemplatePath
+        : fallbackTemplatePath;
+
+  if (!fs.existsSync(finalPath)) {
+    console.warn('⚠️ No se encontró ninguna plantilla válida. Se usará un encabezado vacío.');
+    return '';
+  }
+
+  let template = fs.readFileSync(finalPath, 'utf8');
+  const projectName = path.basename(process.cwd());
+
+  return template.replace(/{projectName}/g, projectName) + '\n\n';
+}
+
+module.exports = { loadPromptTemplate };
+
+
+//package.json
+{
+  "name": "promptme",
+  "version": "1.1.7",
+  "description": "CLI tool to snapshot your codebase for AI analysis",
+  "bin": {
+    "promptme": "./bin/promptme.js"
+  },
+  "preferGlobal": true,
+  "dependencies": {
+    "commander": "^10.0.0",
+    "glob": "^10.3.3",
+    "ignore": "^5.2.0",
+    "istextorbinary": "^6.0.0"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "prompt",
+    "code snapshot",
+    "chatgpt"
+  ],
+  "author": "David Davila",
+  "license": "MIT"
+}
+
+
+//readme.md
+# 🧠 promptme
+
+**`promptme`** es una herramienta CLI para generar archivos de texto con el contenido estructurado de tu proyecto, pensada especialmente para usarse como contexto en modelos de IA como ChatGPT o GPT-4.
+
+Te permite exportar automáticamente tu código fuente ignorando archivos innecesarios, dividirlo en archivos por tamaño, generar un resumen del proyecto, y más.
+
+---
+
+## 🚀 Instalación
+
+```bash
+npm install -g promptme
+
+```
+
+> Esto instalará el comando `promptme` de forma global.
+
+---
+
+## 📦 Uso básico
+
+En la raíz de tu proyecto:
+
+```bash
+promptme
+```
+
+Esto generará uno o varios archivos `project_prompt1.txt`, `project_prompt2.txt`, etc., con el contenido del proyecto (ignorando carpetas como `node_modules`, `.git`, etc.).
+
+---
+
+## ⚙️ Opciones CLI
+
+```bash
+promptme [options]
+```
+
+| Opción              | Descripción                                                               |
+| ------------------- | ------------------------------------------------------------------------- |
+| `-m`, `--maxlength` | Tamaño máximo (en bytes) por archivo generado (por defecto: `12000`)      |
+| `-o`, `--output`    | Nombre base de los archivos de salida (por defecto: `project_prompt`)     |
+| `-f`, `--format`    | Formato de salida: `txt`, `md`, o `json`                                  |
+| `-i`, `--include`   | Carpetas a incluir, separadas por coma (ej: `src,test`)                   |
+| `--template <file>` | Ruta a un archivo `.promptmetemplate` personalizado                       |
+| `--summary`         | Genera también un archivo `project_summary.txt` con detalles del proyecto |
+
+---
+
+## 📝 Ejemplos
+
+### 📂 Generar prompts con nombre personalizado y formato markdown
+
+```bash
+promptme --output=context --format=md
+```
+
+### 🧱 Limitar a ciertas carpetas
+
+```bash
+promptme --include=src,test
+```
+
+### 📚 Usar una plantilla personalizada
+
+```bash
+promptme --template=mi_template.promptmetemplate
+```
+
+### 📊 Generar también el resumen del proyecto
+
+```bash
+promptme --summary
+```
+
+---
+
+## 🧠 Qué contiene el prompt generado
+
+1. Un encabezado introductorio (puedes personalizarlo con una plantilla).
+2. El contenido completo de los archivos fuente.
+3. División automática en archivos si el tamaño supera el límite definido (`--maxlength`).
+
+---
+
+## 📄 Archivos especiales
+
+### `.promptmeignore`
+
+Funciona igual que un `.gitignore`. Aquí defines qué archivos no se deben incluir. Ejemplo:
+
+```
+node_modules
+dist
+.git
+package-lock.json
+.env
+```
+
+### `.promptmetemplate`
+
+Plantilla opcional para el texto inicial del prompt. Ejemplo:
+
+```txt
+# Análisis del proyecto
+
+Estás viendo el contenido del proyecto `{projectName}`. Usa este contexto para responder futuras preguntas técnicas.
+```
+
+---
+
+## 📑 Archivo de resumen: `project_summary.txt`
+
+Si usas `--summary`, se generará un archivo con:
+
+- Lenguajes detectados (por extensión de archivo)
+- Dependencias (`dependencies` y `devDependencies` de `package.json`)
+
+---
+
+## 💡 Casos de uso
+
+- Pasar el contexto de tu código a ChatGPT para refactoring o auditoría
+- Compartir snapshots de tu proyecto
+- Documentación automática y análisis semántico
+- Análisis de estructura para nuevos colaboradores
+
+---
+
+## 🛠️ Contribuciones
+
+¿Ideas, sugerencias o mejoras? ¡Las contribuciones están abiertas! Abre un issue o pull request en el repositorio.
+
+---
+
+## 📄 Licencia
+
+MIT © 2025 - David Dávila
+
+
+//templates\default.promptmeignore
+# 📦 Dependencias y binarios
+node_modules/
+bower_components/
+vendor/
+.pnp/
+.pnp.js
+.pnp.cjs
+
+# 🔧 Bun
+bun.lockb
+.bunlock
+.bunlockb
+.bunfig
+.bunfig.toml
+bunfig.toml
+
+# 🛠️ Build / dist / cache
+dist/
+build/
+out/
+public/
+.esbuild/
+.vite/
+.rollup.cache/
+.storybook/static/
+.nitro/
+.next/
+.netlify/
+.vercel/
+astro/
+remix/
+
+# 🔄 Caché de herramientas
+.tmp/
+.cache/
+.rpt2_cache/
+.nyc_output/
+coverage/
+.jest/
+jest/
+.vitest/
+.cypress/
+playwright-report/
+test-results/
+tsbuildinfo/
+tsconfig.tsbuildinfo
+
+# 🧪 Archivos de pruebas
+*.snap
+*.spec.*
+*.test.*
+coverage-final.json
+
+# 🔐 Configuración sensible o local
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+.npmrc
+.yarnrc
+.babelrc
+.browserslistrc
+*.local
+*.secret
+*.credentials
+
+# 📄 Lockfiles
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+.bunlock
+.bunlockb
+
+# 📝 Archivos generados por promptme
+project_prompt*.txt
+project_summary.txt
+.promptmeignore
+.promptmetemplate
+
+# 📁 Control de versiones
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# 🧰 Configuración de IDEs y herramientas
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# 🔐 Tokens y configuraciones de acceso
+.pypirc
+.git-credentials
+.gitconfig
+.gnupg/
+.ssh/
+.docker/
+.aws/
+.azure/
+.gcloud/
+.nodemon.json
+.babel.config.js
+
+# 🔑 Claves y secretos
+*.pem
+*.key
+*.crt
+*.cert
+*.enc
+*.asc
+*credentials*
+*token*
+*secret*
+*.secrets.*
+*.vault.*
+*.auth.*
+*.apikey.*
+
+# 📁 Archivos ocultos de usuarios
+*.DS_Store
+*.AppleDouble
+*.LSOverride
+*.swp
+*.swo
+
+# 🗑️ Archivos temporales y de respaldo
+*.lockb
+*.so
+*.bin
+*.exe
+*.dll
+*.zip
+*.tar
+*.gz
+*.png
+*.jpg
+*.pdf
+*.log
+*.tmp
+*.bak
+*.swp
+*.old
+*.orig
+*.rej
+*.~
+*.save
+
+# 📦 Monorepo tools
+apps/**/node_modules/
+packages/**/node_modules/
+apps/**/dist/
+packages/**/dist/
+turbo/
+nx-out/
+
+
+//templates\default.promptmetemplate
+# 🧠 Análisis del proyecto `{projectName}`
+
+A continuación encontrarás un volcado completo del contenido de mi proyecto `{projectName}`. He incluido todos los archivos relevantes del repositorio (código fuente, configuración, y otros ficheros útiles) ignorando archivos de dependencias, binarios, y ficheros temporales.
+
+## 🎯 Objetivo
+
+El objetivo es que analices este proyecto como si fueras un experto en desarrollo de software. Podrás:
+- Comprender su estructura y arquitectura.
+- Detectar posibles errores, malas prácticas o mejoras.
+- Responder a preguntas técnicas que te haré más adelante.
+
+## 📦 Sobre el contenido
+
+- Cada archivo está precedido por una línea que indica su ruta.
+- El contenido se mantiene fiel al original, sin modificaciones.
+- El código está dividido en múltiples archivos si es necesario, debido a límites de tokens.
+
+---
+
+Por favor **espera a que te envíe todos los archivos**, y luego estaré listo para hacerte preguntas más detalladas sobre el código, arquitectura, o posibles mejoras.
+ 
+
+
+
+---
+
+✅ Fin del volcado de archivos. Ya puedes comenzar a responder preguntas sobre el proyecto.

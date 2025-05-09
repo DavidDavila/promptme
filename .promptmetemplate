@@ -1,0 +1,21 @@
+# 🧠 Análisis del proyecto `{projectName}`
+
+A continuación encontrarás un volcado completo del contenido de mi proyecto `{projectName}`. He incluido todos los archivos relevantes del repositorio (código fuente, configuración, y otros ficheros útiles) ignorando archivos de dependencias, binarios, y ficheros temporales.
+
+## 🎯 Objetivo
+
+El objetivo es que analices este proyecto como si fueras un experto en desarrollo de software. Podrás:
+- Comprender su estructura y arquitectura.
+- Detectar posibles errores, malas prácticas o mejoras.
+- Responder a preguntas técnicas que te haré más adelante.
+
+## 📦 Sobre el contenido
+
+- Cada archivo está precedido por una línea que indica su ruta.
+- El contenido se mantiene fiel al original, sin modificaciones.
+- El código está dividido en múltiples archivos si es necesario, debido a límites de tokens.
+
+---
+
+Por favor **espera a que te envíe todos los archivos**, y luego estaré listo para hacerte preguntas más detalladas sobre el código, arquitectura, o posibles mejoras.
+ 
