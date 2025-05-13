@@ -1,6 +1,6 @@
 {
   "name": "promptme",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "CLI tool to snapshot your codebase for AI analysis",
   "bin": {
     "promptme": "./bin/promptme.js"
