@@ -15,6 +15,7 @@ program
   .option('--template <file>', 'Usar plantilla personalizada')
   .option('--ignorefile <file>', 'Usar archivo .promptmeignore personalizado')
   .option('--source <path>', 'Ruta del proyecto a analizar', '.')
+  .option('--outputdir <path>', 'Ruta donde se escribirán los archivos generados', '.')
   .option('--stdout', 'Imprimir salida en consola en lugar de escribir archivos')
   .option('--no-generate-defaults', 'No crear archivos .promptmetemplate y .promptmeignore por defecto')
   .option('--summary', 'Generar resumen del proyecto')
@@ -28,7 +29,8 @@ program
       ignorePath: opts.ignorefile,
       generateDefaults: opts.generateDefaults,
       stdout: opts.stdout,
-      sourcePath: path.resolve(opts.source)
+      sourcePath: path.resolve(opts.source),
+      outputDir: path.resolve(opts.outputdir)
     });
 
     if (opts.summary) {

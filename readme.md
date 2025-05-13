@@ -8,11 +8,25 @@ Te permite exportar automáticamente tu código fuente ignorando archivos innece
 
 ## 🚀 Instalación
 
+### Desde NPM
+
 ```bash
 npm install -g promptme
 ```
 
 > Esto instalará el comando `promptme` de forma global.
+
+---
+
+### Desde el código fuente local (modo desarrollo)
+
+Si has clonado este repositorio o lo estás desarrollando tú mismo:
+
+```bash
+npm install -g .
+```
+
+> Esto compilará e instalará tu versión local como comando global.
 
 ---
 
@@ -34,30 +48,31 @@ Esto generará uno o varios archivos `project_prompt1.txt`, `project_prompt2.txt
 promptme [options]
 ```
 
-| Opción                   | Descripción                                                               |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `-m`, `--maxlength`      | Tamaño máximo (en bytes) por archivo generado (por defecto: `40000`)      |
-| `-o`, `--output`         | Nombre base de los archivos de salida (por defecto: `project_prompt`)     |
-| `-f`, `--format`         | Formato de salida: `txt`, `md`, o `json`                                  |
-| `-i`, `--include`        | Carpetas a incluir, separadas por coma (ej: `src,test`)                   |
-| `--template <file>`      | Ruta a un archivo `.promptmetemplate` personalizado                       |
-| `--ignorefile <file>`    | Ruta a un archivo `.promptmeignore` personalizado                         |
-| `--source <path>`        | Ruta del proyecto que se desea analizar (por defecto: directorio actual)  |
-| `--stdout`               | Imprime la salida por consola en vez de escribir archivos                 |
-| `--no-generate-defaults` | No genera `.promptmetemplate` ni `.promptmeignore` si no existen          |
-| `--summary`              | Genera también un archivo `project_summary.txt` con detalles del proyecto |
+| Opción                   | Descripción                                                           |
+| ------------------------ | --------------------------------------------------------------------- |
+| `-m`, `--maxlength`      | Tamaño máximo (en bytes) por archivo generado (por defecto: `40000`)  |
+| `-o`, `--output`         | Nombre base de los archivos de salida (por defecto: `project_prompt`) |
+| `-f`, `--format`         | Formato de salida: `txt`, `md`, o `json`                              |
+| `-i`, `--include`        | Carpetas a incluir, separadas por coma (ej: `src,test`)               |
+| `--template <file>`      | Ruta a una plantilla personalizada (`.promptmetemplate`)              |
+| `--ignorefile <file>`    | Ruta a un archivo `.promptmeignore` personalizado                     |
+| `--source <path>`        | Ruta del proyecto a analizar (por defecto: directorio actual)         |
+| `--outputdir <path>`     | Ruta donde se escribirán los archivos generados (por defecto: `.`)    |
+| `--stdout`               | Imprime la salida por consola en vez de escribir archivos             |
+| `--no-generate-defaults` | No genera `.promptmetemplate` ni `.promptmeignore` si no existen      |
+| `--summary`              | Genera un archivo `project_summary.txt` con lenguajes y dependencias  |
 
 ---
 
-## 🔄 Comando reset
+## 🔄 Comando `reset`
 
-Si has modificado la plantilla o el archivo `.promptmeignore` y deseas restablecerlos a sus valores por defecto, puedes hacerlo con:
+Si has modificado la plantilla o el archivo `.promptmeignore` y deseas restablecerlos a sus valores por defecto:
 
 ```bash
 promptme reset
 ```
 
-Esto sobrescribirá los archivos `.promptmetemplate` y `.promptmeignore` con las versiones estándar proporcionadas por la herramienta.
+Esto sobrescribirá los archivos `.promptmetemplate` y `.promptmeignore` con las versiones estándar incluidas por defecto.
 
 ---
 
@@ -78,13 +93,13 @@ promptme --include=src,test
 ### 3. 📚 Usar una plantilla personalizada
 
 ```bash
-promptme --template=mi_template.promptmetemplate
+promptme --template=plantillas/mi_plantilla.promptmetemplate
 ```
 
 ### 4. 🔍 Usar un archivo `.promptmeignore` personalizado
 
 ```bash
-promptme --ignorefile=custom.ignore
+promptme --ignorefile=config/ignore-base.txt
 ```
 
 ### 5. 📁 Analizar un directorio externo
@@ -93,25 +108,31 @@ promptme --ignorefile=custom.ignore
 promptme --source=../proyecto-cliente
 ```
 
-### 6. 📊 Generar también el resumen del proyecto
+### 6. 📤 Generar los archivos en otro directorio
+
+```bash
+promptme --outputdir=./dump
+```
+
+### 7. 📊 Generar también el resumen del proyecto
 
 ```bash
 promptme --summary
 ```
 
-### 7. 🖨️ Mostrar el resultado directamente en consola (sin escribir archivos)
+### 8. 🖨️ Mostrar el resultado directamente en consola (sin escribir archivos)
 
 ```bash
 promptme --stdout
 ```
 
-### 8. 🙅 No crear automáticamente `.promptmetemplate` ni `.promptmeignore`
+### 9. 🙅 No crear automáticamente `.promptmetemplate` ni `.promptmeignore`
 
 ```bash
 promptme --no-generate-defaults
 ```
 
-### 9. 💡 Combinar todo: analizar un proyecto externo, usar plantilla personalizada, sin generar archivos
+### 10. 🧩 Combinar todo: analizar un proyecto externo, sin escribir archivos, usando template personalizado
 
 ```bash
 promptme \
@@ -140,13 +161,18 @@ promptme \
 ### `.promptmeignore`
 
 Funciona igual que un `.gitignore`. Aquí defines qué archivos no se deben incluir.
-Se genera automáticamente si no existe (a menos que uses `--no-generate-defaults`).
+Se genera automáticamente si no existe, a menos que uses `--no-generate-defaults`.
 
 ### `.promptmetemplate`
 
 Plantilla opcional para el texto inicial del prompt.
 Se genera automáticamente si no existe (a menos que lo impidas con `--no-generate-defaults`).
-Puedes modificarla o restablecerla con `promptme reset`.
+
+Puedes modificarla o restablecerla con:
+
+```bash
+promptme reset
+```
 
 ---
 
@@ -161,18 +187,18 @@ Si usas la opción `--summary`, se generará un archivo que contiene:
 
 ## 💡 Casos de uso
 
-- Pasar el contexto de tu código a ChatGPT para refactoring o auditoría
-- Compartir snapshots de tu proyecto con un equipo remoto
-- Generar documentación estructurada del proyecto
-- Hacer onboarding técnico a nuevos colaboradores
-- Analizar estructura o calidad antes de migraciones o refactorings
+- Pasar el contexto de tu código a ChatGPT para refactoring o auditoría.
+- Compartir snapshots de tu proyecto con un equipo remoto.
+- Generar documentación técnica estructurada.
+- Onboarding para nuevos colaboradores.
+- Revisar dependencias y estructura antes de migraciones.
 
 ---
 
-## 🛠️ Contribuciones
+### ¿Ideas o mejoras?
 
-¿Ideas, sugerencias o mejoras?
-¡Las contribuciones están abiertas! Abre un issue o pull request en el repositorio.
+Las contribuciones están abiertas.
+Puedes abrir un issue o pull request directamente en el repositorio.
 
 ---
 
