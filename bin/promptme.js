@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { program } = require('commander');
+const path = require('path');
 const { generatePromptFiles } = require('../lib/generate');
 const { resetAll } = require('../lib/reset');
 
@@ -12,6 +13,10 @@ program
   .option('-f, --format <format>', 'Formato: txt, md, json', 'txt')
   .option('-i, --include <folders>', 'Carpetas a incluir (ej: src,test)', val => val.split(','), [])
   .option('--template <file>', 'Usar plantilla personalizada')
+  .option('--ignorefile <file>', 'Usar archivo .promptmeignore personalizado')
+  .option('--source <path>', 'Ruta del proyecto a analizar', '.')
+  .option('--stdout', 'Imprimir salida en consola en lugar de escribir archivos')
+  .option('--no-generate-defaults', 'No crear archivos .promptmetemplate y .promptmeignore por defecto')
   .option('--summary', 'Generar resumen del proyecto')
   .action((opts) => {
     generatePromptFiles({
@@ -19,8 +24,17 @@ program
       outputBase: opts.output,
       format: opts.format,
       includeFolders: opts.include,
-      templatePath: opts.template
+      templatePath: opts.template,
+      ignorePath: opts.ignorefile,
+      generateDefaults: opts.generateDefaults,
+      stdout: opts.stdout,
+      sourcePath: path.resolve(opts.source)
     });
+
+    if (opts.summary) {
+      const { generateSummary } = require('../lib/summary');
+      generateSummary(path.resolve(opts.source));
+    }
   });
 
 program
